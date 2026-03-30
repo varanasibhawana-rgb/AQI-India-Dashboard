@@ -147,7 +147,7 @@ if check_password():
     
     # Advanced Filters
     cities = sorted(df_raw['City'].unique())
-    selected_cities = st.sidebar.multiselect("Select Cities", cities, default=cities[:3])
+    selected_cities = st.sidebar.multiselect("Select Cities", cities, default=cities)
     
     # Default to last 30 days of data if range isn't touched
     max_d = df_raw['Date'].max()
