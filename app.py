@@ -76,6 +76,17 @@ st.markdown("""
     .rank-name { font-weight: 600; color: #fff; }
     .rank-val { color: #888; font-size: 0.9rem; }
 
+    /* FORCED VISIBILITY: Share, Deploy, and Menu */
+    header[data-testid="stHeader"] {
+        background-color: #ffffff !important;
+        border-bottom: 2px solid #00d4ff !important;
+    }
+    header[data-testid="stHeader"] * {
+        color: #000000 !important;
+        font-weight: 900 !important;
+        fill: #000000 !important;
+    }
+
     /* Recommendations */
     .rec-card {
         background: rgba(0, 212, 255, 0.05);
