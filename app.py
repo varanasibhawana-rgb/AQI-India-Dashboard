@@ -21,13 +21,18 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    /* FULL-WIDTH MASTERY: Edge-to-edge Content (V16.0) */
+    /* ABSOLUTE ZERO: Annihilate all margins and side gaps (V16.1) */
     [data-testid="stAppViewContainer"] {
         padding: 0 !important;
     }
+    [data-testid="stAppViewBlockContainer"] {
+        max-width: 100% !important;
+        padding: 2rem 3rem !important;
+        margin-left: 0 !important;
+    }
     .main .block-container {
         max-width: 100% !important;
-        padding: 1.5rem 2.5rem !important;
+        padding: 2rem 4rem !important;
     }
     [data-testid="stSidebar"] {
         min-width: 320px !important;
@@ -126,28 +131,32 @@ def get_v16_geo():
     return {'city': 'Delhi', 'state': 'Delhi'}
 
 @st.cache_data(ttl=120, show_spinner=False)
-def fetch_weather_v16(city, aqi_val=None):
+def fetch_weather_v16(city, aqi_val=None, is_today=True):
     API_KEY = "7cdfaac03c68834a1deeb2491c9cf1d4"
-    try:
-        url = f"https://api.openweathermap.org/data/2.5/weather?q={city},IN&units=metric&appid={API_KEY}"
-        r = requests.get(url, timeout=5)
-        d = r.json()
-        if d['cod'] == 200:
-            cond = d['weather'][0]['main']
-            icons = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Mist": "🌫️", "Smoke": "🌫️", "Haze": "🌫️"}
-            return {
-                'temp': int(d['main']['temp']),
-                'hum': d['main']['humidity'],
-                'wind': d['wind']['speed'],
-                'desc': d['weather'][0]['description'].capitalize(),
-                'icon': icons.get(cond, "☀️")
-            }
-    except: pass
+    if is_today:
+        try:
+            url = f"https://api.openweathermap.org/data/2.5/weather?q={city},IN&units=metric&appid={API_KEY}"
+            r = requests.get(url, timeout=5)
+            d = r.json()
+            if d['cod'] == 200:
+                cond = d['weather'][0]['main']
+                icons = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Mist": "🌫️", "Smoke": "🌫️", "Haze": "🌫️"}
+                return {
+                    'temp': int(d['main']['temp']),
+                    'hum': d['main']['humidity'],
+                    'wind': d['wind']['speed'],
+                    'desc': d['weather'][0]['description'].capitalize(),
+                    'icon': icons.get(cond, "☀️"),
+                    'type': "🌐 Satellite Live"
+                }
+        except: pass
+    
+    # ATMOSPHERIC INTELLIGENCE: Estimate climate if API fails or for historical dates
     if aqi_val:
-        temp = 29 if aqi_val > 200 else 24
-        desc = "Hazy Satellite Sync" if aqi_val > 200 else "Cloudy Baseline"
-        icon = "🌫️" if aqi_val > 200 else "☁️"
-        return {'temp': temp, 'hum': 45, 'wind': 6.2, 'desc': desc, 'icon': icon, 'is_sim': True}
+        temp = 29 if aqi_val > 150 else 24
+        desc = "Hazy Baseline" if aqi_val > 150 else "Stable Atmosphere"
+        icon = "🌫️" if aqi_val > 150 else "☀️"
+        return {'temp': temp, 'hum': 45, 'wind': 5.5, 'desc': desc, 'icon': icon, 'type': "📊 Assessment"}
     return None
 
 def speak_v16(text):
@@ -244,13 +253,14 @@ if check_auth_v16():
         is_today = s_date == today_val
         is_future = s_date > today_val
         
+        # Environmental Intelligence Logic (V16.1 Hotfix)
         city_archive = df[df['City'] == s_city]
         live_aqi = fetch_aqi_v16(s_city) if is_today else None
         
         if is_future:
             df_pred = city_archive.sort_values('Date').tail(7)
             aqi_val = int(df_pred['AQI'].mean())
-            time_msg = f"Predictive Path for {s_date.strftime('%d %b %Y')}"
+            time_msg = f"Forecasting for {s_date.strftime('%d %b %Y')}"
             source_label = "🔮 Predicted Risk"
             hp = df_pred.iloc[-1]
             is_live = False
@@ -264,7 +274,8 @@ if check_auth_v16():
             time_msg = f"Satellite Pulse: {live_aqi['time']}" if live_aqi else f"Archive point: {hp['Date'].strftime('%d %b %Y')}"
             is_live = (live_aqi is not None)
 
-        weather = fetch_weather_v16(s_city, aqi_val if is_today else None) if is_today else None
+        # Unified Atmospheric Pulse
+        weather = fetch_weather_v16(s_city, aqi_val, is_today)
 
         # 3. TOP SECTION: Status Pulse
         if aqi_val < 100: msg, cls = "✅ Air Quality is Healthy. Zero biological threat.", "status-safe"
@@ -280,8 +291,8 @@ if check_auth_v16():
             st.markdown(f"<div class='command-card'><h3 style='margin:0; font-family:Outfit;'>{s_city} Intelligence Pulse</h3><p style='color:#888; font-size:0.9rem;'>{time_msg}</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0;'>{aqi_val}</h1><div class='source-tag {'live-pulse' if is_live else ''}'>{source_label}</div></div></div>", unsafe_allow_html=True)
         with col2:
             if weather:
-                st.markdown(f"<div class='command-card'><h3 style='margin:0; font-family:Outfit;'>Live Climate Assessment</h3><p style='color:#888; font-size:0.9rem;'>{weather['desc']}</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0;'>{weather['temp']}°C</h1><div class='source-tag'>{weather['icon']} {weather['hum']}% Hum | {weather['wind']} kph Wind</div></div></div>", unsafe_allow_html=True)
-            else: st.markdown("<div class='command-card'><h3 style='margin:0; font-family:Outfit;'>Climate Link Offline</h3><p style='color:#ff5500;'>📡 Checking satellite climatology...</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0; opacity:0.1;'>--</h1><div class='source-tag'>Refreshing satellite orbit</div></div></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='command-card'><h3 style='margin:0; font-family:Outfit;'>Atmospheric Intelligence</h3><p style='color:#888; font-size:0.9rem;'>{weather['type']}</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0;'>{weather['temp']}°C</h1><div class='source-tag'>{weather['icon']} {weather['desc']} | {weather['wind']} kph</div></div></div>", unsafe_allow_html=True)
+            else: st.markdown("<div class='command-card'><h3 style='margin:0; font-family:Outfit;'>Atmospheric Hub</h3><p style='color:#ff5500;'>📡 Checking satellite climatology...</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0; opacity:0.1;'>--</h1><div class='source-tag'>Refreshing satellite orbit</div></div></div>", unsafe_allow_html=True)
 
         # 5. BODY-IMPACT Metrics
         st.markdown("<div class='section-header'>📊 Body-Impact Metrics & Biological Risk</div>", unsafe_allow_html=True)
@@ -340,4 +351,3 @@ if check_auth_v16():
 
     # Launch Intelligence Hub
     render_v16_hub(df_national, sel_state, sel_city, sel_date, voice_on)
-
