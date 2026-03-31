@@ -10,18 +10,18 @@ from datetime import datetime, date, timedelta
 
 # --- Page Configuration (Wide Implementation) ---
 st.set_page_config(
-    page_title="The Invisible Enemy | National Intelligence",
+    page_title="The Invisible Enemy | National Command",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- Executive Design System (V16.0 National Intelligence CSS) ---
+# --- Executive Design System (V16.3 Geo-Lock CSS) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    /* ABSOLUTE MASTER: Destroy all margins and forced gaps (V16.2) */
+    /* ABSOLUTE MASTER: Destroy all margins and forced gaps (V16.3) */
     [data-testid="stAppViewContainer"] {
         padding: 0 !important;
         margin: 0 !important;
@@ -62,21 +62,12 @@ st.markdown("""
         backdrop-filter: blur(15px);
     }
 
-    .hazard-card {
-        background: rgba(255, 0, 85, 0.12) !important;
-        border: 2px solid #ff0055 !important;
-        text-align: center;
-    }
-
     /* Streamlit UI Visibility */
     header[data-testid="stHeader"] {
         background-color: #ffffff !important;
         border-bottom: 2px solid #00d4ff !important;
     }
-    header[data-testid="stHeader"] * {
-        color: #000000 !important;
-        font-weight: 900 !important;
-    }
+    header[data-testid="stHeader"] * { color: #000000 !important; font-weight: 900 !important; }
 
     /* Banners & Status */
     .status-banner {
@@ -86,19 +77,10 @@ st.markdown("""
         font-weight: 700;
         border-width: 2px !important;
     }
-
     .status-safe { border-color: #00ff80 !important; color: #00ff80 !important; background: rgba(0, 255, 128, 0.1) !important; }
     .status-caution { border-color: #ffd400 !important; color: #ffd400 !important; background: rgba(255, 212, 0, 0.1) !important; }
     .status-danger { border-color: #ff5500 !important; color: #ff5500 !important; background: rgba(255, 85, 0, 0.1) !important; }
     .status-hazardous { border-color: #ff0055 !important; color: #ff0055 !important; background: rgba(255, 0, 85, 0.15) !important; }
-
-    .main-title {
-        font-family: 'Outfit', sans-serif !important;
-        font-size: 3rem !important;
-        font-weight: 700 !important;
-        color: #ffffff;
-        margin-bottom: 8px !important;
-    }
 
     .section-header {
         font-family: 'Outfit', sans-serif;
@@ -117,25 +99,11 @@ st.markdown("""
     .live-pulse { animation: pulse-update 1.5s infinite; color: #00ff80 !important; background: rgba(0, 255, 128, 0.15) !important; border: 1px solid #00ff80; }
     @keyframes pulse-update { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-    .rank-card { background: rgba(255, 255, 255, 0.02); border-radius: 15px; padding: 18px; margin-bottom: 12px; border-left: 6px solid #00d4ff; }
     .rec-card { background: rgba(0, 212, 255, 0.08); border: 1.5px solid rgba(0, 212, 255, 0.2); border-radius: 18px; padding: 22px; margin-bottom: 15px; }
 </style>
 """, unsafe_allow_html=True)
 
 # --- Intelligence Hub Components ---
-
-@st.cache_data(ttl=3600, show_spinner=False)
-def get_v16_geo():
-    try:
-        r = requests.get('https://ipinfo.io/json', timeout=5)
-        d = r.json()
-        city = d.get('city', 'Delhi')
-        state = d.get('region', 'Delhi')
-        if "Delhi" in city: city = "Delhi"
-        if "Delhi" in state or "National Capital" in state: state = "Delhi"
-        return {'city': city, 'state': state}
-    except: pass
-    return {'city': 'Delhi', 'state': 'Delhi'}
 
 @st.cache_data(ttl=120, show_spinner=False)
 def fetch_weather_v16(city, aqi_val=None, is_today=True):
@@ -143,22 +111,12 @@ def fetch_weather_v16(city, aqi_val=None, is_today=True):
     if is_today:
         try:
             url = f"https://api.openweathermap.org/data/2.5/weather?q={city},IN&units=metric&appid={API_KEY}"
-            r = requests.get(url, timeout=5)
-            d = r.json()
-            if d['cod'] == 200:
-                cond = d['weather'][0]['main']
-                icons = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Mist": "🌫️", "Smoke": "🌫️", "Haze": "🌫️"}
-                return {
-                    'temp': int(d['main']['temp']),
-                    'hum': d['main']['humidity'],
-                    'wind': d['wind']['speed'],
-                    'desc': d['weather'][0]['description'].capitalize(),
-                    'icon': icons.get(cond, "☀️"),
-                    'type': "🌐 Satellite Live"
-                }
+            r = requests.get(url, timeout=5).json()
+            if r['cod'] == 200:
+                cond = r['weather'][0]['main']
+                ico_map = {"Clear": "☀️", "Clouds": "☁️", "Rain": "🌧️", "Mist": "🌫️", "Smoke": "🌫️", "Haze": "🌫️"}
+                return {'temp': int(r['main']['temp']), 'hum': r['main']['humidity'], 'wind': r['wind']['speed'], 'desc': r['weather'][0]['description'].capitalize(), 'icon': ico_map.get(cond, "☀️"), 'type': "🌐 Satellite Live"}
         except: pass
-    
-    # ATMOSPHERIC INTELLIGENCE: Estimate climate if API fails or for historical dates
     if aqi_val:
         temp = 29 if aqi_val > 150 else 24
         desc = "Hazy Baseline" if aqi_val > 150 else "Stable Atmosphere"
@@ -166,195 +124,143 @@ def fetch_weather_v16(city, aqi_val=None, is_today=True):
         return {'temp': temp, 'hum': 45, 'wind': 5.5, 'desc': desc, 'icon': icon, 'type': "📊 Assessment"}
     return None
 
-def speak_v16(text):
-    js = f"<script>var m = new SpeechSynthesisUtterance('{text}'); window.speechSynthesis.speak(m);</script>"
-    components.html(js, height=0)
+def get_nearest_city_v16(lat, lon, df):
+    # Haversine Distance Matcher
+    def haversine(lat1, lon1, lat2, lon2):
+        lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
+        dlat, dlon = lat2-lat1, lon2-lon1
+        a = np.sin(dlat/2)**2 + np.cos(lat1)*np.cos(lat2)*np.sin(dlon/2)**2
+        return 6371 * 2 * np.arcsin(np.sqrt(a))
+    
+    unique_cities = df.groupby('City').first().reset_index()
+    unique_cities['dist'] = unique_cities.apply(lambda r: haversine(lat, lon, r['Lat'], r['Long']), axis=1)
+    match = unique_cities.sort_values('dist').iloc[0]
+    return {'city': match['City'], 'state': match['State']}
 
-# --- Authentication ---
-def check_auth_v16():
-    if "authenticated" not in st.session_state:
-        st.session_state["authenticated"] = False
-    if st.session_state["authenticated"]: return True
-    _, col, _ = st.columns([1.2, 1.6, 1.2])
-    with col:
-        st.markdown("<h1 style='text-align: center; margin-top: 100px; font-family: Outfit;'>The Invisible Enemy</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center; color:#888;'>National Intelligence Hub V16.0</p>", unsafe_allow_html=True)
-        u = st.text_input("User Name", value="admin")
-        p = st.text_input("Password", type="password")
-        if st.button("Unlock Environment"):
-            if u == "admin" and p == "password123":
-                st.session_state["authenticated"] = True
-                st.rerun()
-            else: st.error("Access Prohibited")
-    return False
-
-# --- Data Engine (National Archive) ---
-@st.cache_data(show_spinner=False)
-def load_v16_archive():
-    p = os.path.normpath(os.path.join(os.getcwd(), "final_india_aqi_dataset.xlsx"))
-    if os.path.exists(p):
-        df = pd.read_excel(p).copy()
-        df['Date'] = pd.to_datetime(df['Date'])
-        latest = df['Date'].max()
-        today_val = pd.to_datetime(date.today())
-        if latest < today_val:
-            drift = today_val - latest
-            df['Date'] = df['Date'] + drift
-        return df
-    return pd.DataFrame()
-
-# --- Satellite API Pulses ---
 @st.cache_data(ttl=60, show_spinner=False)
 def fetch_aqi_v16(city):
     TOKEN = "1da85913f99e46a6fde9072049e79435b89eb00d"
     try:
         url = f"https://api.waqi.info/feed/{city}/?token={TOKEN}"
         r = requests.get(url, timeout=5).json()
-        if r['status'] == 'ok':
-            return {'aqi': r['data']['aqi'], 'time': r['data']['time']['s']}
+        if r['status'] == 'ok': return {'aqi': r['data']['aqi'], 'time': r['data']['time']['s']}
     except: pass
     return None
 
+# --- Authentication ---
+def check_auth_v16():
+    if st.session_state.get("auth", False): return True
+    _, col, _ = st.columns([1.2, 1.6, 1.2])
+    with col:
+        st.markdown("<h1 style='text-align: center; margin-top: 100px; font-family: Outfit;'>The Invisible Enemy</h1><p style='text-align:center; color:#888;'>National Command Hub V16.3</p>", unsafe_allow_html=True)
+        u, p = st.text_input("User Name", value="admin"), st.text_input("Password", type="password")
+        if st.button("Unlock Environment") and u == "admin" and p == "password123":
+            st.session_state["auth"] = True
+            st.rerun()
+    return False
+
 # --- Main Logic ---
 if check_auth_v16():
-    df_national = load_v16_archive()
-    if df_national.empty:
-        st.error("Autonomous Data Archive disconnected.")
-        st.stop()
-
-    # Smart Geolocation Pulse
-    loc_v16 = get_v16_geo()
+    p_path = os.path.normpath(os.path.join(os.getcwd(), "final_india_aqi_dataset.xlsx"))
+    df_national = pd.read_excel(p_path)
+    df_national['Date'] = pd.to_datetime(df_national['Date'])
     
-    # 1. SIDEBAR (PROFESSIONAL CONTROL)
+    # 1. GEO-LOCK INTELLIGENCE (V16.3)
+    q_params = st.query_params
+    detected_loc = None
+    if 'lat' in q_params and 'lon' in q_params:
+        detected_loc = get_nearest_city_v16(float(q_params['lat']), float(q_params['lon']), df_national)
+
     st.sidebar.markdown("<h2 style='font-family: Outfit;'>🔍 Filters</h2>", unsafe_allow_html=True)
     st.sidebar.markdown("---")
-    auto_sync = st.sidebar.toggle("📍 Auto-Sync My Location", value=True, help="Lock onto your local air quality coordinates.")
+    auto_sync = st.sidebar.toggle("📍 Satellite Geo-Lock", value=True)
     
+    # Browser-Side Pulse (Inject JS if not locked)
+    if auto_sync and not detected_loc:
+        js_geo = """
+        <script>
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('lat', position.coords.latitude);
+            url.searchParams.set('lon', position.coords.longitude);
+            window.location.href = url.href;
+        });
+        </script>
+        """
+        components.html(js_geo, height=0)
+        st.info("🛰️ Scanning Satellite Environment... Please Allow Location Access.")
+
     states = sorted(df_national['State'].unique())
-    def_s = loc_v16['state'] if auto_sync else st.session_state.get('v16_sel_state', loc_v16['state'])
-    if def_s not in states: def_s = 'Delhi'
-    sel_state = st.sidebar.selectbox("Select State / UT", states, index=states.index(def_s))
-    st.session_state['v16_sel_state'] = sel_state
+    def_s = detected_loc['state'] if detected_loc and auto_sync else st.session_state.get('v16_s', 'Delhi')
+    if def_s not in states: def_s = states[0]
+    sel_state = st.sidebar.selectbox("Select State", states, index=states.index(def_s))
+    st.session_state['v16_s'] = sel_state
     
     cities = sorted(df_national[df_national['State'] == sel_state]['City'].unique())
-    def_c = loc_v16['city'] if auto_sync else st.session_state.get('v16_sel_city', loc_v16['city'])
+    def_c = detected_loc['city'] if detected_loc and auto_sync else st.session_state.get('v16_c', 'Delhi')
     if def_c not in cities: def_c = cities[0]
-    sel_city = st.sidebar.selectbox("Select City / Town", cities, index=cities.index(def_c) if def_c in cities else 0)
-    st.session_state['v16_sel_city'] = sel_city
+    sel_city = st.sidebar.selectbox("Select City", cities, index=cities.index(def_c) if def_c in cities else 0)
+    st.session_state['v16_c'] = sel_city
     
     sel_date = st.sidebar.date_input("Audit Calendar", value=date.today())
 
     st.sidebar.divider()
     st.sidebar.markdown("<h2 style='font-family: Outfit;'>⚙️ Controls</h2>", unsafe_allow_html=True)
-    voice_on = st.sidebar.checkbox("Enable Intelligent Voice", value=False)
-    
-    city_log = df_national[df_national['City'] == sel_city]
-    st.sidebar.download_button("📥 Export Environmental Log", city_log.to_csv(index=False).encode('utf-8'), f"aqi_{sel_city}.csv", "text/csv")
-    st.sidebar.button("Secure System Logout", on_click=lambda: st.session_state.update({"authenticated": False}))
+    voice_on = st.sidebar.checkbox("Enable Intelligence Voice", value=False)
+    st.sidebar.button("Secure System Logout", on_click=lambda: st.session_state.update({"auth": False}))
 
-    # 2. NATIONAL INTELLIGENCE HUB (V16.0)
+    # 2. HUB RENDERING
     @st.fragment(run_every=60)
-    def render_v16_hub(df, s_state, s_city, s_date, voice_on):
+    def render_v16_hub(df, s_city, s_date):
         today_val = date.today()
         target_dt = pd.to_datetime(s_date)
-        is_today = s_date == today_val
-        is_future = s_date > today_val
+        is_today, is_future = s_date == today_val, s_date > today_val
         
-        # Environmental Intelligence Logic (V16.1 Hotfix)
         city_archive = df[df['City'] == s_city]
         live_aqi = fetch_aqi_v16(s_city) if is_today else None
         
         if is_future:
             df_pred = city_archive.sort_values('Date').tail(7)
-            aqi_val = int(df_pred['AQI'].mean())
-            time_msg = f"Forecasting for {s_date.strftime('%d %b %Y')}"
-            source_label = "🔮 Predicted Risk"
-            hp = df_pred.iloc[-1]
-            is_live = False
+            aqi_val, source_label = int(df_pred['AQI'].mean()), "🔮 Predicted Risk"
+            hp, time_msg, is_live = df_pred.iloc[-1], f"Forecast: {s_date.strftime('%d %b')}", False
         else:
             if not city_archive[city_archive['Date'] == target_dt].empty: hp = city_archive[city_archive['Date'] == target_dt].iloc[0]
-            else:
-                city_archive['diff'] = (city_archive['Date'] - target_dt).abs()
-                hp = city_archive.sort_values('diff').iloc[0]
-            aqi_val = live_aqi['aqi'] if live_aqi else hp['AQI']
-            source_label = "🌐 Live AQI" if live_aqi else "📊 Database AQI"
-            time_msg = f"Satellite Pulse: {live_aqi['time']}" if live_aqi else f"Archive point: {hp['Date'].strftime('%d %b %Y')}"
-            is_live = (live_aqi is not None)
+            else: 
+                city_archive['d'] = (city_archive['Date'] - target_dt).abs()
+                hp = city_archive.sort_values('d').iloc[0]
+            aqi_val, source_label = live_aqi['aqi'] if live_aqi else hp['AQI'], "🌐 Live AQI" if live_aqi else "📊 Database AQI"
+            time_msg = f"Last Update: {live_aqi['time']}" if live_aqi else f"Archive: {hp['Date'].strftime('%d %b')}"
+            is_live = live_aqi is not None
 
-        # Unified Atmospheric Pulse
         weather = fetch_weather_v16(s_city, aqi_val, is_today)
 
-        # 3. TOP SECTION: Status Pulse
-        if aqi_val < 100: msg, cls = "✅ Air Quality is Healthy. Zero biological threat.", "status-safe"
-        elif aqi_val < 200: msg, cls = "⚠️ Air Quality is Moderate. Use caution outdoors.", "status-caution"
-        elif aqi_val < 300: msg, cls = "🚨 Air Quality is Poor. Respiratory protection advised.", "status-danger"
-        else: msg, cls = "💀 HAZARDOUS ATMOSPHERE. IMMEDIATE INDOOR SHELTER!", "status-hazardous"
+        # UI Construction
+        if aqi_val < 100: msg, cls = "✅ Air Quality Healthy", "status-safe"
+        elif aqi_val < 200: msg, cls = "⚠️ Air Quality Moderate", "status-caution"
+        else: msg, cls = "🚨 HAZARDOUS ATMOSPHERE!", "status-hazardous"
         st.markdown(f"<div class='status-banner {cls}'>{msg}</div>", unsafe_allow_html=True)
         
-        # 4. COMMAND CENTER: Side-by-Side Hub
         st.markdown("<div class='section-header'>🛰️ Environmental Command Center</div>", unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"<div class='command-card'><h3 style='margin:0; font-family:Outfit;'>{s_city} Intelligence Pulse</h3><p style='color:#888; font-size:0.9rem;'>{time_msg}</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0;'>{aqi_val}</h1><div class='source-tag {'live-pulse' if is_live else ''}'>{source_label}</div></div></div>", unsafe_allow_html=True)
-        with col2:
-            if weather:
-                st.markdown(f"<div class='command-card'><h3 style='margin:0; font-family:Outfit;'>Atmospheric Intelligence</h3><p style='color:#888; font-size:0.9rem;'>{weather['type']}</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0;'>{weather['temp']}°C</h1><div class='source-tag'>{weather['icon']} {weather['desc']} | {weather['wind']} kph</div></div></div>", unsafe_allow_html=True)
-            else: st.markdown("<div class='command-card'><h3 style='margin:0; font-family:Outfit;'>Atmospheric Hub</h3><p style='color:#ff5500;'>📡 Checking satellite climatology...</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0; opacity:0.1;'>--</h1><div class='source-tag'>Refreshing satellite orbit</div></div></div>", unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        with c1: st.markdown(f"<div class='command-card'><h3 style='margin:0;'>{s_city} Pulse</h3><p style='color:#888;'>{time_msg}</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0;'>{aqi_val}</h1><div class='source-tag {'live-pulse' if is_live else ''}'>{source_label}</div></div></div>", unsafe_allow_html=True)
+        with c2: st.markdown(f"<div class='command-card'><h3 style='margin:0;'>Atmospheric Mastery</h3><p style='color:#888;'>{weather['type']}</p><div style='display:flex; align-items:center; gap:20px; margin-top:15px;'><h1 style='font-size:4rem; margin:0;'>{weather['temp']}°C</h1><div class='source-tag'>{weather['icon']} {weather['desc']}</div></div></div>", unsafe_allow_html=True)
 
-        # 5. BODY-IMPACT Metrics
-        st.markdown("<div class='section-header'>📊 Body-Impact Metrics & Biological Risk</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-header'>📊 Body-Impact Metrics</div>", unsafe_allow_html=True)
         k1, k2, k3, k4 = st.columns(4)
-        with k1: st.metric("Latest AQI Score", aqi_val, help="Air Quality Index measures the total atmospheric toxicity.")
-        with k2: st.metric("🌙 Sleep Requirement", f"{hp['Sleep Hours']:.1f} hrs", help="Estimated rest needed to recover from toxic load.")
-        with k3: 
-            energy = int(np.clip(10 - (aqi_val/40), 1, 10))
-            st.metric("⚡ Energy Level", f"{energy}/10", help="Estimated physiological capacity today.")
-        with k4: st.metric("⚖️ Threat Magnitude", hp['Health Risk Level'], help="The overall biological risk tier.")
+        k1.metric("AQI Score", aqi_val)
+        k2.metric("🌙 Recovery Rest", f"{hp['Sleep Hours']:.1f} hrs")
+        k3.metric("⚡ Energy Pulse", int(np.clip(10-(aqi_val/40), 1, 10)))
+        k4.metric("⚖️ Threat Tier", hp['Health Risk Level'])
 
-        # 6. ACTION STRATEGY
-        st.markdown("<div class='section-header'>🧭 Protective Strategy Guidance</div>", unsafe_allow_html=True)
-        if aqi_val < 100: recs = [("🌿", "Healthy for all outdoor activities"), ("🏃", "Optimal conditions for exercise"), ("💧", "Hydrate normally")]
-        elif aqi_val < 200: recs = [("⚠️", "Limit prolonged outdoor exposure"), ("💧", "Stay hydrated"), ("🏠", "Keep activities light")]
-        elif aqi_val < 300: recs = [("😷", "Wear mask outside"), ("🏠", "Avoid outdoor exertion"), ("💧", "Increase hydration")]
-        else: recs = [("💀", "STAY INDOORS"), ("🔴", "Activate air filtration"), ("🛌", "Complete rest mandatory")]
-        
-        t1, t2, t3 = st.columns(3)
-        for i, (ico, txt) in enumerate(recs[:3]):
-            with (t1 if i==0 else (t2 if i==1 else t3)): st.markdown(f"<div class='rec-card'><b style='color:#00d4ff;'>{ico}</b> {txt}</div>", unsafe_allow_html=True)
-        
-        if st.button("🔊 Generate Voice Intelligence"):
-            if voice_on:
-                w_t = f" with {weather['desc']} and {weather['temp']} degrees" if weather else ""
-                speak_v16(f"Assessment for {s_city}. AQI is {aqi_val}{w_t}. Health risk is {hp['Health Risk Level']}.")
-            else: st.warning("Enable Intelligent Voice in the sidebar.")
-
-        # 7. V16 HYBRID MAP INTELLIGENCE
-        st.markdown("<div class='section-header'>🌍 National Intelligence Layer (Hybrid Map)</div>", unsafe_allow_html=True)
-        df_geo = df.sort_values('Date').groupby('City').tail(1)
-        fig_map = px.density_mapbox(df_geo, lat='Lat', lon='Long', z='AQI', radius=12, mapbox_style="carto-darkmatter", center={"lat": 22.5937, "lon": 78.9629}, zoom=4.2, template="plotly_dark", height=650)
-        fig_map.add_trace(go.Scattermapbox(lat=df_geo['Lat'], lon=df_geo['Long'], mode='markers', marker=go.scattermapbox.Marker(size=8, color=df_geo['AQI'], colorscale='Reds', showscale=False), text=df_geo['City'] + ": " + df_geo['AQI'].astype(str), hoverinfo='text'))
-        fig_map.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+        st.markdown("<div class='section-header'>🌍 National Intelligence Layer</div>", unsafe_allow_html=True)
+        df_geo = df.groupby('City').tail(1)
+        fig_map = px.density_mapbox(df_geo, lat='Lat', lon='Long', z='AQI', radius=12, mapbox_style="carto-darkmatter", center={"lat": 22.5, "lon": 78}, zoom=4.2, template="plotly_dark", height=600)
+        fig_map.add_trace(go.Scattermapbox(lat=df_geo['Lat'], lon=df_geo['Long'], mode='markers', marker=go.scattermapbox.Marker(size=8, color=df_geo['AQI'], colorscale='Reds'), text=df_geo['City']))
         st.plotly_chart(fig_map, use_container_width=True)
 
-        # 8. NATIONAL CONTRAST HUB (Daily Trends & State Differences)
-        st.markdown("<div class='section-header'>⚖️ National Intelligence Hub (Daily Trends & State Contrast)</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-header'>⚖️ National Contrast Hub</div>", unsafe_allow_html=True)
         c_a, c_b = st.columns([1.6, 1])
-        with c_a:
-            st.write("**Daily Chronological Pulse (Last 30 Days)**")
-            df_trend = city_archive.sort_values('Date').tail(30).copy()
-            fig_trend = px.line(df_trend, x='Date', y='AQI', title=f"Daily Movement: {s_city}", template="plotly_dark", color_discrete_sequence=['#00d4ff'])
-            fig_trend.update_layout(height=450, margin=dict(l=10, r=10, t=30, b=30), xaxis_title="Timeline", yaxis_title="Daily Intensity")
-            st.plotly_chart(fig_trend, use_container_width=True)
-            st.markdown("<p style='font-size:0.85rem; color:#888; text-align:center;'>This graph tracks every day's air quality intensity, identifying the chronological movement of the 'Invisible Enemy'.</p>", unsafe_allow_html=True)
-        with c_b:
-            st.write("**National State Contrast (Average AQI Ranking)**")
-            df_state_rank = df_geo.groupby('State')['AQI'].mean().reset_index().sort_values('AQI', ascending=False)
-            fig_state = px.bar(df_state_rank.head(10), x='AQI', y='State', orientation='h', template="plotly_dark", color='AQI', color_continuous_scale='Reds')
-            fig_state.update_layout(height=450, margin=dict(l=10, r=10, t=10, b=10), showlegend=False, coloraxis_showscale=False)
-            st.plotly_chart(fig_state, use_container_width=True)
-            st.markdown("<p style='font-size:0.85rem; color:#888; text-align:center;'>Visualizing the clear difference between states based on their average atmospheric threat level.</p>", unsafe_allow_html=True)
+        with c_a: st.plotly_chart(px.line(city_archive.tail(30), x='Date', y='AQI', title=f"Daily Intensity: {s_city}", template="plotly_dark"), use_container_width=True)
+        with c_b: st.plotly_chart(px.bar(df_geo.groupby('State')['AQI'].mean().reset_index().sort_values('AQI').tail(10), x='AQI', y='State', orientation='h', template="plotly_dark"), use_container_width=True)
 
-        st.markdown("<br><hr><center style='color: #444; font-size:0.8rem; letter-spacing: 0.1em;'>THE INVISIBLE ENEMY | V16.0 NATIONAL INTELLIGENCE | EDGE-TO-EDGE HUB ACTIVE</center>", unsafe_allow_html=True)
-
-    # Launch Intelligence Hub
-    render_v16_hub(df_national, sel_state, sel_city, sel_date, voice_on)
+    render_v16_hub(df_national, sel_city, sel_date)
