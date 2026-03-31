@@ -21,21 +21,28 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap');
 
-    /* ABSOLUTE ZERO: Annihilate all margins and side gaps (V16.1) */
+    /* ABSOLUTE MASTER: Destroy all margins and forced gaps (V16.2) */
     [data-testid="stAppViewContainer"] {
         padding: 0 !important;
+        margin: 0 !important;
     }
-    [data-testid="stAppViewBlockContainer"] {
+    [data-testid="stMainBlockContainer"] {
         max-width: 100% !important;
-        padding: 2rem 3rem !important;
-        margin-left: 0 !important;
+        padding: 2.5rem 4rem !important;
+        margin: 0 !important;
+        width: 100% !important;
     }
     .main .block-container {
         max-width: 100% !important;
         padding: 2rem 4rem !important;
+        margin: 0 !important;
     }
     [data-testid="stSidebar"] {
         min-width: 320px !important;
+        max-width: 320px !important;
+    }
+    div[data-testid="stVerticalBlock"] > div {
+        width: 100% !important;
     }
 
     html, body {
